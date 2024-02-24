@@ -9,6 +9,8 @@ namespace JoelHiltonMovies.Models
 
         }
 
-        public DbSet<AddMovie> Movie { get; set; }
+        public DbSet<Movies> Movies { get; set; }
+
+        public DbSet<Categories> Categories { get; set; }
     }
 }

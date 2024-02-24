@@ -1,5 +1,6 @@
 using JoelHiltonMovies.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace JoelHiltonMovies.Controllers
 {
@@ -7,9 +8,9 @@ namespace JoelHiltonMovies.Controllers
     {
         private NewMovieContext _context;
 
-        public HomeController(NewMovieContext movies) 
+        public HomeController(NewMovieContext context) 
         { 
-            _context = movies;
+            _context = context;
         }
 
         public IActionResult Index()
@@ -25,16 +26,82 @@ namespace JoelHiltonMovies.Controllers
         [HttpGet]
         public IActionResult NewMovie()
         {
-            return View();
+            ViewBag.Categories = _context.Categories
+                .OrderBy(x => x.CategoryName)
+                .ToList();
+
+            return View(new Movies());
         }
 
         [HttpPost]
-        public IActionResult NewMovie(AddMovie response)
+        public IActionResult NewMovie(Movies response)
         {
-            _context.Movie.Add(response);
+            if (ModelState.IsValid)
+            {
+                _context.Movies.Add(response);
+                _context.SaveChanges();
+
+                return View("Confirmation");
+            }
+            else
+            {
+                ViewBag.Categories = _context.Categories
+                .OrderBy(x => x.CategoryName)
+                .ToList();
+
+                return View();
+            }
+            
+        }
+
+        public IActionResult DisplayMovie()
+        {
+            var movies = _context.Movies
+                .Include(m => m.Category)
+                .OrderBy(m => m.Title)
+                .ToList();
+
+            return View(movies);
+
+        }
+
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var record = _context.Movies
+                .Single(x => x.MovieId == id);
+            
+            ViewBag.Categories = _context.Categories
+                .OrderBy(x => x.CategoryName)
+                .ToList();
+
+            return View("NewMovie", record);
+        }
+
+        [HttpPost]
+        public IActionResult Edit(Movies updatedInfo)
+        {
+            _context.Update(updatedInfo);
             _context.SaveChanges();
 
-            return View("Confirmation");
+            return RedirectToAction("DisplayMovie");
+        }
+
+        public IActionResult Delete(int id)
+        {
+            var record = _context.Movies
+                .Single(x => x.MovieId == id);
+
+            return View(record);
+        }
+
+        [HttpPost]
+        public IActionResult Delete(Movies movie)
+        {
+            _context.Movies.Remove(movie);
+            _context.SaveChanges();
+
+            return RedirectToAction("DisplayMovie");
         }
     }
 }
